@@ -1,0 +1,51 @@
+name: Publish Windows ARM64 release
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/release.yml'
+permissions:
+  contents: write
+concurrency:
+  group: publish-v1.0.0
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test and build ARM64 executable
+        shell: pwsh
+        run: ./scripts/Build.ps1
+      - name: Upload verified release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Release inspection failed.' }
+          $release = $releases | Where-Object { $_.tag_name -eq 'v1.0.0' } | Select-Object -First 1
+          if (-not $release -or -not $release.draft) { throw 'Expected an unpublished v1.0.0 draft. Published versions are not overwritten.' }
+          Copy-Item -LiteralPath 'artifacts/win-arm64/MK Saturation.exe' -Destination 'artifacts/MK-Saturation.exe'
+          $releaseFiles = @('artifacts/MK-Saturation.exe', 'artifacts/MK-Saturation-1.0.0-win-arm64.zip')
+          $releaseFiles | ForEach-Object {
+            $hash = Get-FileHash -LiteralPath $_ -Algorithm SHA256
+            "$($hash.Hash)  $([IO.Path]::GetFileName($_))"
+          } | Set-Content 'artifacts/SHA256SUMS.txt'
+          gh release upload v1.0.0 @releaseFiles 'artifacts/SHA256SUMS.txt' --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
+          # Remove only abandoned, incomplete uploads from the browser attempt.
+          $releases = gh api "repos/$env:GITHUB_REPOSITORY/releases" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Release inspection failed.' }
+          $release = $releases | Where-Object { $_.tag_name -eq 'v1.0.0' } | Select-Object -First 1
+          foreach ($asset in $release.assets | Where-Object { $_.state -eq 'starter' -and $_.name -eq 'MK.Saturation.exe' }) {
+            gh api --method DELETE "repos/$env:GITHUB_REPOSITORY/releases/assets/$($asset.id)"
+            if ($LASTEXITCODE -ne 0) { throw 'Incomplete asset cleanup failed.' }
+          }
+          gh release edit v1.0.0 --draft=false --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing release failed.' }

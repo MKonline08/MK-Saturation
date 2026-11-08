@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>disable</ImplicitUsings><Nullable>enable</Nullable>
+    <AssemblyName>MK Saturation</AssemblyName><RootNamespace>MkSaturation</RootNamespace>
+    <RuntimeIdentifier>win-arm64</RuntimeIdentifier><PlatformTarget>ARM64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest><ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version><Company>MK</Company><Product>MK Saturation</Product>
+    <PublishSingleFile>true</PublishSingleFile><SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract><PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../Chroma.Core/Chroma.Core.csproj" /></ItemGroup>
+</Project>

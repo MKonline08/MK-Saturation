@@ -53,7 +53,12 @@ public partial class MainWindow : Window
         if (controller?.OwnsEffect == true) return;
         backend?.Dispose(); backend = null; controller = null;
         try { backend = new NativeBackend(); _ = backend.Read(); controller = new EffectController(backend); }
-        catch (Exception ex) { lastError = ex.Message; Global.IsChecked = false; Status.Text = "Local preview only · " + ex.Message; }
+        catch (Exception ex)
+        {
+            lastError = ex.Message; Global.IsChecked = false;
+            Status.Text = "Local preview only · " + ex.Message;
+            Notice.Text = "Desktop backend unavailable: " + ex.Message + " Local preview is available. Use Retry backend after resolving the problem.";
+        }
     }
     private void ShowWindow() { Show(); WindowState = WindowState.Normal; Activate(); }
     private void AmountChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
